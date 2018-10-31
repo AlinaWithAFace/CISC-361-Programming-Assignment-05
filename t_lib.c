@@ -18,7 +18,6 @@ void t_yield() {
     swapcontext(ready, running);
 }
 
-
 /**
  *  Initialize the thread library by setting up the "running" and the "ready" queues,
  *  creating TCB of the "main" thread, and inserting it into the running queue.
@@ -58,11 +57,11 @@ int t_create(void (*fct)(int), int id, int pri) {
     uc = (ucontext_t *) malloc(sizeof(ucontext_t));
 
     getcontext(uc);
-/***
-  uc->uc_stack.ss_sp = mmap(0, sz,
-       PROT_READ | PROT_WRITE | PROT_EXEC,
-       MAP_PRIVATE | MAP_ANON, -1, 0);
-***/
+
+    uc->uc_stack.ss_sp = mmap(0, sz,
+                              PROT_READ | PROT_WRITE | PROT_EXEC,
+                              MAP_PRIVATE | MAP_ANON, -1, 0);
+
     uc->uc_stack.ss_sp = malloc(sz);  /* new statement */
     uc->uc_stack.ss_size = sz;
     uc->uc_stack.ss_flags = 0;

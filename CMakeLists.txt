@@ -5,8 +5,20 @@ set(CMAKE_C_STANDARD 11)
 
 include_directories(.)
 
-add_executable(CISC_361_Programming_Assignment_05
-        t_lib.c
-        t_lib.h
+add_executable(test00
         test00.c
-        ud_thread.h)
+        ud_thread.h
+        t_lib.h
+        t_lib.c)
+
+add_executable(thread-creation-test
+        thread-creation-test.c
+        ud_thread.h
+        t_lib.h
+        t_lib.c)
+
+add_executable(multi-thread-creation-test
+        multi-thread-creation-test.c
+        ud_thread.h
+        t_lib.h
+        t_lib.c)

@@ -6,7 +6,6 @@
 #include <ucontext.h>
 #include <sys/mman.h>
 
-
 struct tcb {
     int thread_id;
     int thread_priority;
