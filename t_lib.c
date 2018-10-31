@@ -101,18 +101,22 @@ void t_terminate() {
  */
 void t_yield() {
     tcb *current_thread;
-
     current_thread = running;
+    running->next = NULL;
 
-    tcb *tmp_control_block;
-    tmp_control_block = ready;
+    tcb *ready_queue;
+    ready_queue = ready;
 
     // Add current running process to the end of the ready queue
-    while (NULL != tmp_control_block->next) {
-        tmp_control_block = tmp_control_block->next;
+    while (NULL != ready_queue->next) {
+        ready_queue = ready_queue->next;
     }
-    tmp_control_block->next = current_thread;
+    ready_queue->next = current_thread;
 
-    swapcontext(ready->thread_context, running->thread_context);
+    ucontext_t *tmp_ready = ready->thread_context;
+    ucontext_t *tmp_running = running->thread_context;
+
     ready = ready->next;
+    swapcontext(tmp_ready, tmp_running);
+
 }
