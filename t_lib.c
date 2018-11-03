@@ -9,25 +9,31 @@ tcb *ready;
  *  creating TCB of the "main" thread, and inserting it into the running queue.
  */
 void t_init() {
+    //printf("t_init\n");
 
     tcb *tmp_block;
     tmp_block = malloc(sizeof(tcb));
-    tmp_block->thread_id = 0;
-    tmp_block->thread_priority = 0;
+    tmp_block->thread_id = 1;
+    tmp_block->thread_priority = 1;
     tmp_block->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
     tmp_block->next = NULL;
 
     getcontext(tmp_block->thread_context);    /* let tmp be the context of main() */
+
     running = tmp_block;
 
-    ready = tmp_block;
+//    tcb *readyBlock;
+//    readyBlock = malloc(sizeof(tcb));
+//    readyBlock->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
+
+//    ready = readyBlock;
 }
 
 /**
  *  Shut down the thread library by freeing all the dynamically allocated memory.
  */
 void t_shutdown() {
-    free(running);
+    //printf("t_shutdown\n");
     while (NULL != ready->next) {
         tcb *temp_block = ready;
         ready = ready->next;
@@ -36,6 +42,7 @@ void t_shutdown() {
     }
     free(ready->thread_context);
     free(ready);
+    free(running);
 }
 
 /**
@@ -52,38 +59,37 @@ void t_shutdown() {
  * @return
  */
 int t_create(void (*fct)(int), int id, int pri) {
+    //printf("t_create\n");
+    //printf("Creating new thread %d\n", id);
     size_t sz = 0x10000;
 
-    ucontext_t *new_context;
-    new_context = (ucontext_t *) malloc(sizeof(ucontext_t));
+    ucontext_t *ucontext = (ucontext_t *) malloc(sizeof(ucontext_t));
 
-    getcontext(new_context);
+    getcontext(ucontext);
 
-    new_context->uc_stack.ss_sp = mmap(0, sz,
-                                       PROT_READ | PROT_WRITE | PROT_EXEC,
-                                       MAP_PRIVATE | MAP_ANON, -1, 0);
+    ucontext->uc_stack.ss_sp = malloc(sz);  /* new statement */
+    ucontext->uc_stack.ss_size = sz;
+    ucontext->uc_stack.ss_flags = 0;
+    makecontext(ucontext, (void (*)(void)) fct, 1, id);
 
-    new_context->uc_stack.ss_sp = malloc(sz);  /* new statement */
-    new_context->uc_stack.ss_size = sz;
-    new_context->uc_stack.ss_flags = 0;
-    new_context->uc_link = running->thread_context;
-    makecontext(new_context, (void (*)(void)) fct, 1, id);
+    tcb *new_thread_block = malloc(sizeof(tcb));
+    new_thread_block->thread_id = id;
+    new_thread_block->thread_priority = pri;
+    new_thread_block->thread_context = ucontext;
+    new_thread_block->next = NULL;
 
-    //ready = new_context;
-
-    tcb *new_control_block;
-    new_control_block = malloc(sizeof(tcb));
-    new_control_block->thread_id = id;
-    new_control_block->thread_priority = pri;
-    new_control_block->thread_context = new_context;
-    new_control_block->next = NULL;
-
-    tcb *parent_control_block;
-    parent_control_block = ready;
-    while (NULL != parent_control_block->next) {
-        parent_control_block = parent_control_block->next;
+    tcb *parent_control_block = ready;
+    if (NULL == parent_control_block) {
+        //printf("ready null, assigning new thread to ready\n");
+        ready = new_thread_block;
+    } else {
+        //printf("ready not null, parsing list to find tail\n");
+        while (NULL != parent_control_block->next) {
+            parent_control_block = parent_control_block->next;
+        }
+        parent_control_block->next = new_thread_block;
     }
-    parent_control_block->next = new_control_block;
+    return 0;
 }
 
 /**
@@ -91,7 +97,17 @@ int t_create(void (*fct)(int), int id, int pri) {
  * and resuming execution of the thread in the head of the "ready" queue via `setcontext()`.
  */
 void t_terminate() {
-    //todo
+    printf("t_terminate\n");
+    tcb *tmp = running;
+    running = ready;
+    ready = ready->next;
+    free(tmp->thread_context->uc_stack.ss_sp);
+    free(tmp->thread_context);
+    free(tmp);
+
+    if (NULL != running) {
+        setcontext(running->thread_context);
+    }
 }
 
 /**
@@ -100,23 +116,25 @@ void t_terminate() {
  * The first thread (if there is one) in the ready queue resumes execution.
  */
 void t_yield() {
-    tcb *current_thread;
-    current_thread = running;
-    running->next = NULL;
-
-    tcb *ready_queue;
-    ready_queue = ready;
+    //printf("t_yield\n");
+    tcb *current_ready_queue = ready;
 
     // Add current running process to the end of the ready queue
-    while (NULL != ready_queue->next) {
-        ready_queue = ready_queue->next;
+    if (NULL == current_ready_queue) {
+        running = current_ready_queue;
+        return;
+    } else {
+        while (NULL != current_ready_queue->next) {
+            current_ready_queue = current_ready_queue->next;
+        }
+        current_ready_queue->next = running;
+        tcb *last = running;
+        running = ready;
+        ready = ready->next;
+        running->next = NULL;
+
+        swapcontext(last->thread_context, running->thread_context);
     }
-    ready_queue->next = current_thread;
 
-    ucontext_t *tmp_ready = ready->thread_context;
-    ucontext_t *tmp_running = running->thread_context;
-
-    ready = ready->next;
-    swapcontext(tmp_ready, tmp_running);
 
 }

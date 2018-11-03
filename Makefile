@@ -28,7 +28,7 @@ t_lib.a: ${LIBOBJS} Makefile
 t_lib.o: t_lib.c t_lib.h Makefile
 	${CC} ${CFLAGS} -c t_lib.c
 
-test00.o: test00.c ud_thread.h Makefile
+test00.o: ../../../.CLion2018.2/config/scratches/test00.c ud_thread.h Makefile
 	${CC} ${CFLAGS} -c test00.c
 
 test00: test00.o t_lib.a Makefile
