@@ -6,19 +6,19 @@ set(CMAKE_C_STANDARD 11)
 include_directories(.)
 
 add_executable(test00
-        ../../../.CLion2018.2/config/scratches/test00.c
+        tests/test00.c
         ud_thread.h
         t_lib.h
         t_lib.c)
 
-add_executable(thread-creation-test
-        ../../../.CLion2018.2/config/scratches/thread-creation-test.c
+add_executable(test01-thread-creation
+        tests/test01-thread-creation.c
         ud_thread.h
         t_lib.h
         t_lib.c)
 
-add_executable(multi-thread-creation-test
-        ../../../.CLion2018.2/config/scratches/multi-thread-creation-test.c
+add_executable(test01x-multi-thread-creation
+        tests/test01x-multi-thread-creation.c
         ud_thread.h
         t_lib.h
         t_lib.c)
@@ -30,7 +30,31 @@ add_executable(swap-context
         ../../../.CLion2018.2/config/scratches/swap-context.c)
 
 add_executable(test00_original
-        ../../../.CLion2018.2/config/scratches/test00.c
+        tests/test00.c
         ud_thread.h
         ../../../.CLion2018.2/config/scratches/t_lib_original.h
         ../../../.CLion2018.2/config/scratches/t_lib_original.c)
+
+add_executable(test01a-multi-thread-creation
+        tests/test01a-multi-thread-creation.c
+        ud_thread.h
+        t_lib.h
+        t_lib.c)
+
+add_executable(test02-time-slicing
+        tests/test02-time-slicing.c
+        ud_thread.h
+        t_lib.h
+        t_lib.c)
+
+add_executable(test04-time-slicing
+        tests/test04-time-slicing.c
+        ud_thread.h
+        t_lib.h
+        t_lib.c)
+
+add_executable(test07-testing-2lq
+        tests/test07-testing-2lq.c
+        ud_thread.h
+        t_lib.h
+        t_lib.c)

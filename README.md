@@ -41,10 +41,8 @@ You will design and implement, in 4 phases, a user-level thread library.
 #### Phase 2
 
 *   CPU scheduling and time slicing:
-
-*   2-Level Queue (2LQ) with level 0 (high priority) and 1 (low priority). By default, the main thread is with level 1 (low priority).
-*   Round-Robin (RR) scheduler within each level with time quantum of 1 microseconds. Use `ualarm()` to "simulate" timer interrupt so that when SIGALRM is caught by the signal handler, context switching is performed. Notice that right before context switching, another SIGALRM is scheduled as the next timer interrupt. Also, when a thread yields before its time quantum expires, the scheduled SIGALRM should be canceled via ualarm(0,0).
-
+    * 2-Level Queue (2LQ) with level 0 (high priority) and 1 (low priority). By default, the `main` thread is with level 1 (low priority).
+    * Round-Robin (RR) scheduler within each level with time quantum of 1 microseconds. Use `ualarm()` to "simulate" timer interrupt so that when `SIGALRM` is caught by the signal handler, context switching is performed. Notice that right before context switching, another `SIGALRM` is scheduled as the next timer interrupt. Also, when a thread yields before its time quantum expires, the scheduled `SIGALRM` should be canceled via `ualarm(0,0)`.
 *   Test cases: T1a, T2, T4, and T7
 
 #### Phase 3

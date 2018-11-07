@@ -7,7 +7,7 @@
 #include <sys/mman.h>
 
 struct tcb {
-    int thread_id;
+    int thread_id; // level 0 (high priority) and 1 (low priority)
     int thread_priority;
     ucontext_t *thread_context;
     struct tcb *next;

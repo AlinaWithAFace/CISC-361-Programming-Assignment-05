@@ -62,20 +62,23 @@ int t_create(void (*fct)(int), int id, int pri) {
     //printf("t_create\n");
     //printf("Creating new thread %d\n", id);
     size_t sz = 0x10000;
-
-    ucontext_t *ucontext = (ucontext_t *) malloc(sizeof(ucontext_t));
-
-    getcontext(ucontext);
-
-    ucontext->uc_stack.ss_sp = malloc(sz);  /* new statement */
-    ucontext->uc_stack.ss_size = sz;
-    ucontext->uc_stack.ss_flags = 0;
-    makecontext(ucontext, (void (*)(void)) fct, 1, id);
-
     tcb *new_thread_block = malloc(sizeof(tcb));
+    new_thread_block->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
+
+    getcontext(new_thread_block->thread_context);
+/***
+  uc->uc_stack.ss_sp = mmap(0, sz,
+       PROT_READ | PROT_WRITE | PROT_EXEC,
+       MAP_PRIVATE | MAP_ANON, -1, 0);
+***/
+    new_thread_block->thread_context->uc_stack.ss_sp = malloc(sz);  /* new statement */
+    new_thread_block->thread_context->uc_stack.ss_size = sz;
+    new_thread_block->thread_context->uc_stack.ss_flags = 0;
+    makecontext(new_thread_block->thread_context, (void (*)(void)) fct, 1, id);
+
     new_thread_block->thread_id = id;
     new_thread_block->thread_priority = pri;
-    new_thread_block->thread_context = ucontext;
+    new_thread_block->thread_context = new_thread_block->thread_context;
     new_thread_block->next = NULL;
 
     tcb *parent_control_block = ready;
@@ -97,7 +100,7 @@ int t_create(void (*fct)(int), int id, int pri) {
  * and resuming execution of the thread in the head of the "ready" queue via `setcontext()`.
  */
 void t_terminate() {
-    printf("t_terminate\n");
+    //printf("t_terminate\n");
     tcb *tmp = running;
     running = ready;
     ready = ready->next;
@@ -118,23 +121,19 @@ void t_terminate() {
 void t_yield() {
     //printf("t_yield\n");
     tcb *current_ready_queue = ready;
+    tcb *current_running_queue = running;
+    running->next = NULL;
 
     // Add current running process to the end of the ready queue
-    if (NULL == current_ready_queue) {
-        running = current_ready_queue;
-        return;
-    } else {
+    if (NULL != current_ready_queue) {
         while (NULL != current_ready_queue->next) {
             current_ready_queue = current_ready_queue->next;
         }
-        current_ready_queue->next = running;
-        tcb *last = running;
+        current_ready_queue->next = current_running_queue;
+        tcb *last = current_running_queue;
         running = ready;
         ready = ready->next;
-        running->next = NULL;
 
         swapcontext(last->thread_context, running->thread_context);
     }
-
-
 }
