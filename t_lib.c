@@ -1,7 +1,12 @@
+#include <memory.h>
 #include "t_lib.h"
+#include <signal.h>
+#include <zconf.h>
+#include "ud_thread.h"
 
-tcb *running;
-tcb *ready;
+threadNode *running;
+threadNode *readyNode;
+threadHeap *ready;
 
 
 /**
@@ -11,8 +16,8 @@ tcb *ready;
 void t_init() {
     //printf("t_init\n");
 
-    tcb *tmp_block;
-    tmp_block = malloc(sizeof(tcb));
+    threadNode *tmp_block;
+    tmp_block = malloc(sizeof(threadNode));
     tmp_block->thread_id = 1;
     tmp_block->thread_priority = 1;
     tmp_block->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
@@ -22,26 +27,40 @@ void t_init() {
 
     running = tmp_block;
 
-//    tcb *readyBlock;
-//    readyBlock = malloc(sizeof(tcb));
+    ready = (threadHeap *) calloc(1, sizeof(threadHeap));
+
+    init_alarm();
+
+//    threadNode *readyBlock;
+//    readyBlock = malloc(sizeof(threadNode));
 //    readyBlock->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
 
-//    ready = readyBlock;
+//    readyNode = readyBlock;
 }
+
+
+/**
+ * Initialize alarm system and timeout
+ */
+void init_alarm() {
+    signal(SIGALRM, sig_func);
+    ualarm(100000, 0); // alarm in 1 microsecond
+}
+
 
 /**
  *  Shut down the thread library by freeing all the dynamically allocated memory.
  */
 void t_shutdown() {
     //printf("t_shutdown\n");
-    while (NULL != ready->next) {
-        tcb *temp_block = ready;
-        ready = ready->next;
+    while (NULL != readyNode->next) {
+        threadNode *temp_block = readyNode;
+        readyNode = readyNode->next;
         free(temp_block->thread_context);
         free(temp_block);
     }
-    free(ready->thread_context);
-    free(ready);
+    free(readyNode->thread_context);
+    free(readyNode);
     free(running);
 }
 
@@ -58,11 +77,11 @@ void t_shutdown() {
  * @param pri priority
  * @return
  */
-int t_create(void (*fct)(int), int id, int pri) {
+void t_create(void (*fct)(int), int id, int pri) {
     //printf("t_create\n");
     //printf("Creating new thread %d\n", id);
     size_t sz = 0x10000;
-    tcb *new_thread_block = malloc(sizeof(tcb));
+    threadNode *new_thread_block = malloc(sizeof(threadNode));
     new_thread_block->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
 
     getcontext(new_thread_block->thread_context);
@@ -79,20 +98,21 @@ int t_create(void (*fct)(int), int id, int pri) {
     new_thread_block->thread_id = id;
     new_thread_block->thread_priority = pri;
     new_thread_block->thread_context = new_thread_block->thread_context;
-    new_thread_block->next = NULL;
+    //new_thread_block->next = NULL;
 
-    tcb *parent_control_block = ready;
-    if (NULL == parent_control_block) {
-        //printf("ready null, assigning new thread to ready\n");
-        ready = new_thread_block;
-    } else {
-        //printf("ready not null, parsing list to find tail\n");
-        while (NULL != parent_control_block->next) {
-            parent_control_block = parent_control_block->next;
-        }
-        parent_control_block->next = new_thread_block;
-    }
-    return 0;
+//    threadNode *parent_control_block = readyNode;
+//    if (NULL == parent_control_block) {
+//        //printf("readyNode null, assigning new thread to readyNode\n");
+//        readyNode = new_thread_block;
+//    } else {
+//        //printf("readyNode not null, parsing list to find tail\n");
+//        while (NULL != parent_control_block->next) {
+//            parent_control_block = parent_control_block->next;
+//        }
+//        parent_control_block->next = new_thread_block;
+//    }
+
+    push(ready, new_thread_block);
 }
 
 /**
@@ -101,9 +121,9 @@ int t_create(void (*fct)(int), int id, int pri) {
  */
 void t_terminate() {
     //printf("t_terminate\n");
-    tcb *tmp = running;
-    running = ready;
-    ready = ready->next;
+    threadNode *tmp = running;
+    running = readyNode;
+    readyNode = readyNode->next;
     free(tmp->thread_context->uc_stack.ss_sp);
     free(tmp->thread_context);
     free(tmp);
@@ -120,20 +140,79 @@ void t_terminate() {
  */
 void t_yield() {
     //printf("t_yield\n");
-    tcb *current_ready_queue = ready;
-    tcb *current_running_queue = running;
-    running->next = NULL;
+//    threadNode *current_ready_queue = readyNode;
+//    threadNode *current_running_queue = running;
+//    running->next = NULL;
 
-    // Add current running process to the end of the ready queue
-    if (NULL != current_ready_queue) {
-        while (NULL != current_ready_queue->next) {
-            current_ready_queue = current_ready_queue->next;
-        }
-        current_ready_queue->next = current_running_queue;
-        tcb *last = current_running_queue;
-        running = ready;
-        ready = ready->next;
+    // Add current running process to the end of the readyNode queue
+//    if (NULL != current_ready_queue) {
+//
+//        while (NULL != current_ready_queue->next) {
+//
+//            current_ready_queue = current_ready_queue->next;
+//        }
+//        current_ready_queue->next = current_running_queue;
+//
+//        threadNode *previous = current_running_queue;
+//        running = readyNode;
+//        readyNode = readyNode->next;
+//
+//        swapcontext(previous->thread_context, running->thread_context);
+//    }
 
-        swapcontext(last->thread_context, running->thread_context);
-    }
+    push(ready, running);
+
+    swapcontext(running->thread_context, pop(ready)->thread_context);
 }
+
+void sig_func(int sig_no) {
+    printf("Caught signal (%d)[%s]\n", sig_no, strsignal(sig_no));
+}
+
+
+void push(threadHeap *h, threadNode *node) {
+    if (h->len + 1 >= h->size) {
+        h->size = h->size ? h->size * 2 : 4;
+        h->nodes = (threadNode **) realloc(h->nodes, h->size * sizeof(threadNode));
+    }
+    int i = h->len + 1;
+    int j = i / 2;
+    while (i > 1 && h->nodes[j]->thread_priority > node->thread_priority) {
+        h->nodes[i] = h->nodes[j];
+        i = j;
+        j = j / 2;
+    }
+
+    h->nodes[i] = node;
+    h->len++;
+}
+
+
+threadNode *pop(threadHeap *h) {
+    int currentItem, j, k;
+    if (!h->len) {
+        return NULL;
+    }
+    threadNode *data = h->nodes[1];
+
+    h->nodes[1] = h->nodes[h->len];
+
+    h->len--;
+
+    currentItem = 1;
+    while (currentItem != h->len + 1) {
+        k = h->len + 1;
+        j = 2 * currentItem;
+        if (j <= h->len && h->nodes[j]->thread_priority < h->nodes[k]->thread_priority) {
+            k = j;
+        }
+        if (j + 1 <= h->len && h->nodes[j + 1]->thread_priority < h->nodes[k]->thread_priority) {
+            k = j + 1;
+        }
+        h->nodes[currentItem] = h->nodes[k];
+        currentItem = k;
+    }
+    return data;
+}
+
+

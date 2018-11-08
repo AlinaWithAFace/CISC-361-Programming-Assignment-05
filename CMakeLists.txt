@@ -58,3 +58,6 @@ add_executable(test07-testing-2lq
         ud_thread.h
         t_lib.h
         t_lib.c)
+
+add_executable(test_alarm
+        samples/test_alarm.c)

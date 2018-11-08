@@ -30,7 +30,7 @@ int main(void) {
     printf("This is main()...\n");
     t_create(function, 3, 1);
 
-    for(i = 0; i < 5000; i++) {
+    for (i = 0; i < 5000; i++) {
         printf("This is main(%d)...\n", i);
     }
 

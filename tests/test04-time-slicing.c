@@ -10,19 +10,19 @@ void thread_function(int val) {
     int i = 0;
     printf("I am thread %d...\n", val);
 
-    if(val < 5) {
+    if (val < 5) {
 
-        t_create(thread_function, val+1, 1);
+        t_create(thread_function, val + 1, 1);
     }
 
-    for(;;) {
+    for (;;) {
 
-        for(i = 0; i < 10000000; i++);
+        for (i = 0; i < 10000000; i++);
         printf("I am thread %d...\n", val);
     }
 }
 
-int main(void){
+int main(void) {
 
     int i;
 
@@ -31,7 +31,7 @@ int main(void){
 
     for (;;) {
 
-        for(i = 0; i < 10000000; i++);
+        for (i = 0; i < 10000000; i++);
         printf("I am main...\n");
     }
 

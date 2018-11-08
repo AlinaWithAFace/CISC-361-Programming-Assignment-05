@@ -6,11 +6,24 @@
 #include <ucontext.h>
 #include <sys/mman.h>
 
-struct tcb {
+
+#ifndef _TLIBH_
+#define _TLIBH_
+
+struct threadNode {
     int thread_id; // level 0 (high priority) and 1 (low priority)
     int thread_priority;
     ucontext_t *thread_context;
-    struct tcb *next;
+    struct threadNode *next;
 };
+typedef struct threadNode threadNode;
 
-typedef struct tcb tcb;
+struct threadHeap {
+    threadNode **nodes;
+    int len;
+    int size;
+};
+typedef struct threadHeap threadHeap;
+
+#endif
+
