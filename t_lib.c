@@ -5,7 +5,6 @@
 #include "ud_thread.h"
 
 threadNode *running;
-threadNode *readyNode;
 threadHeap *ready;
 
 
@@ -21,7 +20,7 @@ void t_init() {
     tmp_block->thread_id = 1;
     tmp_block->thread_priority = 1;
     tmp_block->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
-    tmp_block->next = NULL;
+    //tmp_block->next = NULL;
 
     getcontext(tmp_block->thread_context);    /* let tmp be the context of main() */
 
@@ -29,7 +28,7 @@ void t_init() {
 
     ready = (threadHeap *) calloc(1, sizeof(threadHeap));
 
-    init_alarm();
+    //init_alarm();
 
 //    threadNode *readyBlock;
 //    readyBlock = malloc(sizeof(threadNode));
@@ -52,15 +51,23 @@ void init_alarm() {
  *  Shut down the thread library by freeing all the dynamically allocated memory.
  */
 void t_shutdown() {
-    //printf("t_shutdown\n");
-    while (NULL != readyNode->next) {
-        threadNode *temp_block = readyNode;
-        readyNode = readyNode->next;
-        free(temp_block->thread_context);
-        free(temp_block);
+    printf("t_shutdown\n");
+//    while (NULL != readyNode->next) {
+//        threadNode *temp_block = readyNode;
+//        readyNode = readyNode->next;
+//        free(temp_block->thread_context);
+//        free(temp_block);
+//    }
+//    free(readyNode->thread_context);
+//    free(readyNode);
+
+
+    for (int i = 0; i < ready->len; ++i) {
+        threadNode *tmp = pop(ready);
+        free(tmp->thread_context);
+        free(tmp);
     }
-    free(readyNode->thread_context);
-    free(readyNode);
+
     free(running);
 }
 
@@ -120,15 +127,15 @@ void t_create(void (*fct)(int), int id, int pri) {
  * and resuming execution of the thread in the head of the "ready" queue via `setcontext()`.
  */
 void t_terminate() {
-    //printf("t_terminate\n");
+    printf("t_terminate %d\n", running->thread_id);
     threadNode *tmp = running;
-    running = readyNode;
-    readyNode = readyNode->next;
     free(tmp->thread_context->uc_stack.ss_sp);
     free(tmp->thread_context);
     free(tmp);
 
+    running = pop(ready);
     if (NULL != running) {
+        printf("setting context to thread %d", running->thread_id);
         setcontext(running->thread_context);
     }
 }
@@ -160,9 +167,11 @@ void t_yield() {
 //        swapcontext(previous->thread_context, running->thread_context);
 //    }
 
+    threadNode *tmp = pop(ready);
+
     push(ready, running);
 
-    swapcontext(running->thread_context, pop(ready)->thread_context);
+    swapcontext(running->thread_context, tmp->thread_context);
 }
 
 void sig_func(int sig_no) {
@@ -170,48 +179,60 @@ void sig_func(int sig_no) {
 }
 
 
-void push(threadHeap *h, threadNode *node) {
-    if (h->len + 1 >= h->size) {
-        h->size = h->size ? h->size * 2 : 4;
-        h->nodes = (threadNode **) realloc(h->nodes, h->size * sizeof(threadNode));
+void push(threadHeap *heap, threadNode *node) {
+    printf("[Pushing on %d of %d]\n", node->thread_id, heap->len);
+    if (heap->len + 1 >= heap->size) {
+        heap->size = heap->size ? heap->size * 2 : 4;
+        heap->nodes = (threadNode **) realloc(heap->nodes, heap->size * sizeof(threadNode));
     }
-    int i = h->len + 1;
+    int i = heap->len + 1;
     int j = i / 2;
-    while (i > 1 && h->nodes[j]->thread_priority > node->thread_priority) {
-        h->nodes[i] = h->nodes[j];
+    while (i > 1 && heap->nodes[j]->thread_priority > node->thread_priority) {
+        heap->nodes[i] = heap->nodes[j];
         i = j;
         j = j / 2;
     }
 
-    h->nodes[i] = node;
-    h->len++;
+    heap->nodes[i] = node;
+    heap->len++;
 }
 
 
-threadNode *pop(threadHeap *h) {
-    int currentItem, j, k;
-    if (!h->len) {
+threadNode *pop(threadHeap *heap) {
+    //printf("pop %d", heap->len);
+    int currentItem, min, max;
+    if (!heap->len) {
         return NULL;
     }
-    threadNode *data = h->nodes[1];
+    threadNode *data = heap->nodes[1];
 
-    h->nodes[1] = h->nodes[h->len];
+    heap->nodes[1] = heap->nodes[heap->len];
 
-    h->len--;
+    heap->len--;
 
     currentItem = 1;
-    while (currentItem != h->len + 1) {
-        k = h->len + 1;
-        j = 2 * currentItem;
-        if (j <= h->len && h->nodes[j]->thread_priority < h->nodes[k]->thread_priority) {
-            k = j;
+    printf("parsing heap...\n");
+    while (currentItem != heap->len + 1) {
+        max = heap->len + 1;
+        min = 2 * currentItem;
+
+        printf("currentItem %d\n", currentItem);
+        printf("max %d\n", max);
+        printf("min %d\n", min);
+
+        if (min <= heap->len &&
+            heap->nodes[min]->thread_priority < heap->nodes[max]->thread_priority) {
+            max = min;
         }
-        if (j + 1 <= h->len && h->nodes[j + 1]->thread_priority < h->nodes[k]->thread_priority) {
-            k = j + 1;
+        if (min + 1 <= heap->len &&
+            heap->nodes[min + 1]->thread_priority < heap->nodes[max]->thread_priority) {
+            max = min + 1;
         }
-        h->nodes[currentItem] = h->nodes[k];
-        currentItem = k;
+        heap->nodes[currentItem] = heap->nodes[max];
+        currentItem = max;
     }
+
+    printf("[Pop off %d of %d]\n", data->thread_id, heap->len);
     return data;
 }
 

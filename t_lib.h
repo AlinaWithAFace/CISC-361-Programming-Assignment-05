@@ -14,7 +14,6 @@ struct threadNode {
     int thread_id; // level 0 (high priority) and 1 (low priority)
     int thread_priority;
     ucontext_t *thread_context;
-    struct threadNode *next;
 };
 typedef struct threadNode threadNode;
 
