@@ -14,15 +14,16 @@ struct threadNode {
     int thread_id; // level 0 (high priority) and 1 (low priority)
     int thread_priority;
     ucontext_t *thread_context;
+    struct threadNode *next;
 };
 typedef struct threadNode threadNode;
 
-struct threadHeap {
-    threadNode **nodes;
+struct threadQueue {
+    threadNode *first;
     int len;
     int size;
 };
-typedef struct threadHeap threadHeap;
+typedef struct threadQueue threadQueue;
 
 #endif
 

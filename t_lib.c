@@ -5,7 +5,7 @@
 #include "ud_thread.h"
 
 threadNode *running;
-threadHeap *ready;
+threadQueue *ready;
 
 
 /**
@@ -17,16 +17,17 @@ void t_init() {
 
     threadNode *tmp_block;
     tmp_block = malloc(sizeof(threadNode));
-    tmp_block->thread_id = 1;
+    tmp_block->thread_id = 0;
     tmp_block->thread_priority = 1;
     tmp_block->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
-    //tmp_block->next = NULL;
+    tmp_block->next = NULL;
 
     getcontext(tmp_block->thread_context);    /* let tmp be the context of main() */
 
     running = tmp_block;
 
-    ready = (threadHeap *) calloc(1, sizeof(threadHeap));
+    ready = (threadQueue *) calloc(1, sizeof(threadQueue));
+    ready->first = NULL;
 
     //init_alarm();
 
@@ -51,7 +52,7 @@ void init_alarm() {
  *  Shut down the thread library by freeing all the dynamically allocated memory.
  */
 void t_shutdown() {
-    printf("t_shutdown\n");
+    //printf("t_shutdown\n");
 //    while (NULL != readyNode->next) {
 //        threadNode *temp_block = readyNode;
 //        readyNode = readyNode->next;
@@ -105,7 +106,7 @@ void t_create(void (*fct)(int), int id, int pri) {
     new_thread_block->thread_id = id;
     new_thread_block->thread_priority = pri;
     new_thread_block->thread_context = new_thread_block->thread_context;
-    //new_thread_block->next = NULL;
+    new_thread_block->next = NULL;
 
 //    threadNode *parent_control_block = readyNode;
 //    if (NULL == parent_control_block) {
@@ -119,7 +120,7 @@ void t_create(void (*fct)(int), int id, int pri) {
 //        parent_control_block->next = new_thread_block;
 //    }
 
-    push(ready, new_thread_block);
+    push(new_thread_block);
 }
 
 /**
@@ -127,7 +128,7 @@ void t_create(void (*fct)(int), int id, int pri) {
  * and resuming execution of the thread in the head of the "ready" queue via `setcontext()`.
  */
 void t_terminate() {
-    printf("t_terminate %d\n", running->thread_id);
+    //printf("t_terminate %d\n", running->thread_id);
     threadNode *tmp = running;
     free(tmp->thread_context->uc_stack.ss_sp);
     free(tmp->thread_context);
@@ -135,7 +136,7 @@ void t_terminate() {
 
     running = pop(ready);
     if (NULL != running) {
-        printf("setting context to thread %d", running->thread_id);
+        //printf("setting context to thread %d", running->thread_id);
         setcontext(running->thread_context);
     }
 }
@@ -146,32 +147,14 @@ void t_terminate() {
  * The first thread (if there is one) in the ready queue resumes execution.
  */
 void t_yield() {
-    //printf("t_yield\n");
-//    threadNode *current_ready_queue = readyNode;
-//    threadNode *current_running_queue = running;
-//    running->next = NULL;
+    threadNode *next = pop(ready);
+    threadNode *current = running;
 
-    // Add current running process to the end of the readyNode queue
-//    if (NULL != current_ready_queue) {
-//
-//        while (NULL != current_ready_queue->next) {
-//
-//            current_ready_queue = current_ready_queue->next;
-//        }
-//        current_ready_queue->next = current_running_queue;
-//
-//        threadNode *previous = current_running_queue;
-//        running = readyNode;
-//        readyNode = readyNode->next;
-//
-//        swapcontext(previous->thread_context, running->thread_context);
-//    }
+    push(current);
+    running = next;
 
-    threadNode *tmp = pop(ready);
-
-    push(ready, running);
-
-    swapcontext(running->thread_context, tmp->thread_context);
+    //printf("Swapping %d and %d\n", current->thread_id, next->thread_id);
+    swapcontext(current->thread_context, next->thread_context);
 }
 
 void sig_func(int sig_no) {
@@ -179,61 +162,47 @@ void sig_func(int sig_no) {
 }
 
 
-void push(threadHeap *heap, threadNode *node) {
-    printf("[Pushing on %d of %d]\n", node->thread_id, heap->len);
-    if (heap->len + 1 >= heap->size) {
-        heap->size = heap->size ? heap->size * 2 : 4;
-        heap->nodes = (threadNode **) realloc(heap->nodes, heap->size * sizeof(threadNode));
-    }
-    int i = heap->len + 1;
-    int j = i / 2;
-    while (i > 1 && heap->nodes[j]->thread_priority > node->thread_priority) {
-        heap->nodes[i] = heap->nodes[j];
-        i = j;
-        j = j / 2;
-    }
+void push(threadNode *node) {
+    //printList(ready);
+    threadNode *currentNode = ready->first;
 
-    heap->nodes[i] = node;
-    heap->len++;
+    if (NULL == currentNode) {
+        //printf("Current node null\n");
+        ready->first = node;
+    } else {
+        while (NULL != currentNode->next) {
+            currentNode = currentNode->next;
+        }
+        currentNode->next = node;
+    }
+    //printf("[Pushing on %d]\n", node->thread_id);
+    //printList(ready);
 }
 
 
-threadNode *pop(threadHeap *heap) {
-    //printf("pop %d", heap->len);
-    int currentItem, min, max;
-    if (!heap->len) {
-        return NULL;
-    }
-    threadNode *data = heap->nodes[1];
-
-    heap->nodes[1] = heap->nodes[heap->len];
-
-    heap->len--;
-
-    currentItem = 1;
-    printf("parsing heap...\n");
-    while (currentItem != heap->len + 1) {
-        max = heap->len + 1;
-        min = 2 * currentItem;
-
-        printf("currentItem %d\n", currentItem);
-        printf("max %d\n", max);
-        printf("min %d\n", min);
-
-        if (min <= heap->len &&
-            heap->nodes[min]->thread_priority < heap->nodes[max]->thread_priority) {
-            max = min;
+threadNode *pop(threadQueue *heap) {
+    //printList(heap);
+    threadNode *tmp = NULL;
+    if (NULL != heap) {
+        tmp = heap->first;
+        if (NULL != heap->first->next) {
+            heap->first = heap->first->next;
         }
-        if (min + 1 <= heap->len &&
-            heap->nodes[min + 1]->thread_priority < heap->nodes[max]->thread_priority) {
-            max = min + 1;
-        }
-        heap->nodes[currentItem] = heap->nodes[max];
-        currentItem = max;
+        tmp->next = NULL;
+        //printf("[Popping off %d]\n", tmp->thread_id);
+    } else {
+        //printf("[Popping off null]\n");
     }
-
-    printf("[Pop off %d of %d]\n", data->thread_id, heap->len);
-    return data;
+    //printList(heap);
+    return tmp;
 }
 
-
+void printList(threadQueue *heap) {
+    printf("{");
+    threadNode *currentNode = heap->first;
+    while (NULL != currentNode) {
+        printf(" %d,", currentNode->thread_id);
+        currentNode = currentNode->next;
+    }
+    printf("}\n");
+}
