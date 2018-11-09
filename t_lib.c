@@ -40,7 +40,7 @@ void init_alarm() {
     //printf("init_alarm for process %d\n", running->thread_id);
     //printList(ready);
     signal(SIGALRM, sig_func);
-    ualarm(100000, 0); // alarm in 1 microsecond
+    ualarm(10000, 0); // alarm in 1 microsecond
     //alarm(3);
 }
 
@@ -128,6 +128,8 @@ void t_terminate() {
  * The first thread (if there is one) in the ready queue resumes execution.
  */
 void t_yield() {
+    //printList(ready);
+
     threadNode *next = pop(ready);
     threadNode *current = running;
     next->next = NULL;
@@ -136,6 +138,7 @@ void t_yield() {
     push(ready, current);
     running = next;
 
+    //printList(ready);
     init_alarm();
     swapcontext(current->thread_context, next->thread_context);
 }
@@ -148,29 +151,37 @@ void sig_func(int sig_no) {
 }
 
 /**
- * Add a node to the given heap
+ * Add a node to the given queue
  * @param node
  */
-void push(threadQueue *heap, threadNode *node) {
+void push(threadQueue *queueHead, threadNode *node) {
     node->next = NULL;
-    threadNode *currentNode = heap->first;
+    threadNode *currentNode = queueHead->first;
 
+    /// Insert node at the beginning of the queue if it's empty
     if (NULL == currentNode) {
-        heap->first = node;
+        queueHead->first = node;
     } else {
-        while (NULL != currentNode->next) {
-            currentNode = currentNode->next;
+        /// New node's priority is lesser than first item in queue
+        if (node->thread_priority < queueHead->first->thread_priority) {
+            node->next = queueHead->first;
+            queueHead->first = node;
+        } else {
+            /// Traverse to the end of the list or to the point the priority is lesser
+            while (NULL != currentNode->next && currentNode->next->thread_priority < node->thread_priority) {
+                currentNode = currentNode->next;
+            }
+            currentNode->next = node;
         }
-        currentNode->next = node;
     }
 }
 
 
-threadNode *pop(threadQueue *heap) {
+threadNode *pop(threadQueue *queueHead) {
     threadNode *tmp = NULL;
-    if (NULL != heap) {
-        tmp = heap->first;
-        heap->first = heap->first->next;
+    if (NULL != queueHead) {
+        tmp = queueHead->first;
+        queueHead->first = queueHead->first->next;
         tmp->next = NULL;
     }
     if (NULL != tmp) {
@@ -179,12 +190,12 @@ threadNode *pop(threadQueue *heap) {
     return tmp;
 }
 
-void printList(threadQueue *heap) {
+void printList(threadQueue *queueHead) {
     threadNode *currentNode;
     printf("[%d] ", running->thread_id);
-    if (NULL != heap) {
+    if (NULL != queueHead) {
         printf("{");
-        currentNode = heap->first;
+        currentNode = queueHead->first;
 
         while (NULL != currentNode) {
             printf("%d, ", currentNode->thread_id);
