@@ -17,7 +17,7 @@ void sig_func(int sig_no);
 
 void init_alarm();
 
-void push(threadNode *node);
+void push(threadQueue *heap, threadNode *node);
 
 threadNode *pop(threadQueue *heap);
 

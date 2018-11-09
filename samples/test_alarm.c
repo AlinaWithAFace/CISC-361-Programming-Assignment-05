@@ -20,17 +20,18 @@ void sig_func(int sig_no) {
 }
 
 int main() {
+    printf("Starting...\n");
     int ret;
 
     signal(SIGALRM, sig_func);
 
-    ualarm(900000, 0);  // alarm in 3 seconds
-    // alarm(3);               // alarm in 3 seconds
+    //ualarm(900000, 0);  // alarm in 3 seconds
+    alarm(3);               // alarm in 3 seconds
 
     // version 1: deferred SIGALRM signal
-    // sighold(SIGALRM);
-    // usleep(6000000);     // sleep 6 seconds
-    // sigrelse(SIGALRM);
+//     sighold(SIGALRM);
+//     usleep(6000000);     // sleep 6 seconds
+//     sigrelse(SIGALRM);
     // end of version 1
 
     // version 2: normal SIGALRM signal

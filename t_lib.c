@@ -13,6 +13,7 @@ threadQueue *ready;
  *  creating TCB of the "main" thread, and inserting it into the running queue.
  */
 void t_init() {
+    init_alarm();
     //printf("t_init\n");
 
     threadNode *tmp_block;
@@ -29,13 +30,6 @@ void t_init() {
     ready = (threadQueue *) calloc(1, sizeof(threadQueue));
     ready->first = NULL;
 
-    //init_alarm();
-
-//    threadNode *readyBlock;
-//    readyBlock = malloc(sizeof(threadNode));
-//    readyBlock->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
-
-//    readyNode = readyBlock;
 }
 
 
@@ -43,8 +37,11 @@ void t_init() {
  * Initialize alarm system and timeout
  */
 void init_alarm() {
+    //printf("init_alarm for process %d\n", running->thread_id);
+    //printList(ready);
     signal(SIGALRM, sig_func);
     ualarm(100000, 0); // alarm in 1 microsecond
+    //alarm(3);
 }
 
 
@@ -86,8 +83,6 @@ void t_shutdown() {
  * @return
  */
 void t_create(void (*fct)(int), int id, int pri) {
-    //printf("t_create\n");
-    //printf("Creating new thread %d\n", id);
     size_t sz = 0x10000;
     threadNode *new_thread_block = malloc(sizeof(threadNode));
     new_thread_block->thread_context = (ucontext_t *) malloc(sizeof(ucontext_t));
@@ -108,19 +103,7 @@ void t_create(void (*fct)(int), int id, int pri) {
     new_thread_block->thread_context = new_thread_block->thread_context;
     new_thread_block->next = NULL;
 
-//    threadNode *parent_control_block = readyNode;
-//    if (NULL == parent_control_block) {
-//        //printf("readyNode null, assigning new thread to readyNode\n");
-//        readyNode = new_thread_block;
-//    } else {
-//        //printf("readyNode not null, parsing list to find tail\n");
-//        while (NULL != parent_control_block->next) {
-//            parent_control_block = parent_control_block->next;
-//        }
-//        parent_control_block->next = new_thread_block;
-//    }
-
-    push(new_thread_block);
+    push(ready, new_thread_block);
 }
 
 /**
@@ -128,7 +111,6 @@ void t_create(void (*fct)(int), int id, int pri) {
  * and resuming execution of the thread in the head of the "ready" queue via `setcontext()`.
  */
 void t_terminate() {
-    //printf("t_terminate %d\n", running->thread_id);
     threadNode *tmp = running;
     free(tmp->thread_context->uc_stack.ss_sp);
     free(tmp->thread_context);
@@ -136,7 +118,6 @@ void t_terminate() {
 
     running = pop(ready);
     if (NULL != running) {
-        //printf("setting context to thread %d", running->thread_id);
         setcontext(running->thread_context);
     }
 }
@@ -149,60 +130,69 @@ void t_terminate() {
 void t_yield() {
     threadNode *next = pop(ready);
     threadNode *current = running;
+    next->next = NULL;
+    current->next = NULL;
 
-    push(current);
+    push(ready, current);
     running = next;
 
-    //printf("Swapping %d and %d\n", current->thread_id, next->thread_id);
+    init_alarm();
     swapcontext(current->thread_context, next->thread_context);
 }
 
 void sig_func(int sig_no) {
-    printf("Caught signal (%d)[%s]\n", sig_no, strsignal(sig_no));
+    //printf("Caught signal (%d)[%s] from thread %d\n", sig_no, strsignal(sig_no), running->thread_id);
+    //printList(ready);
+    t_yield();
+    //printList(ready);
 }
 
-
-void push(threadNode *node) {
-    //printList(ready);
-    threadNode *currentNode = ready->first;
+/**
+ * Add a node to the given heap
+ * @param node
+ */
+void push(threadQueue *heap, threadNode *node) {
+    node->next = NULL;
+    threadNode *currentNode = heap->first;
 
     if (NULL == currentNode) {
-        //printf("Current node null\n");
-        ready->first = node;
+        heap->first = node;
     } else {
         while (NULL != currentNode->next) {
             currentNode = currentNode->next;
         }
         currentNode->next = node;
     }
-    //printf("[Pushing on %d]\n", node->thread_id);
-    //printList(ready);
 }
 
 
 threadNode *pop(threadQueue *heap) {
-    //printList(heap);
     threadNode *tmp = NULL;
     if (NULL != heap) {
         tmp = heap->first;
-        if (NULL != heap->first->next) {
-            heap->first = heap->first->next;
-        }
+        heap->first = heap->first->next;
         tmp->next = NULL;
-        //printf("[Popping off %d]\n", tmp->thread_id);
-    } else {
-        //printf("[Popping off null]\n");
     }
-    //printList(heap);
+    if (NULL != tmp) {
+        tmp->next = NULL;
+    }
     return tmp;
 }
 
 void printList(threadQueue *heap) {
-    printf("{");
-    threadNode *currentNode = heap->first;
-    while (NULL != currentNode) {
-        printf(" %d,", currentNode->thread_id);
-        currentNode = currentNode->next;
+    threadNode *currentNode;
+    printf("[%d] ", running->thread_id);
+    if (NULL != heap) {
+        printf("{");
+        currentNode = heap->first;
+
+        while (NULL != currentNode) {
+            printf("%d, ", currentNode->thread_id);
+            currentNode = currentNode->next;
+        }
+        printf("}");
+    } else {
+        printf("{ }");
     }
-    printf("}\n");
+    printf("\n");
 }
