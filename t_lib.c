@@ -14,7 +14,6 @@ threadQueue *ready;
  */
 void t_init() {
     init_alarm();
-    //printf("t_init\n");
 
     threadNode *tmp_block;
     tmp_block = malloc(sizeof(threadNode));
@@ -29,7 +28,6 @@ void t_init() {
 
     ready = (threadQueue *) calloc(1, sizeof(threadQueue));
     ready->first = NULL;
-
 }
 
 
@@ -37,11 +35,8 @@ void t_init() {
  * Initialize alarm system and timeout
  */
 void init_alarm() {
-    //printf("init_alarm for process %d\n", running->thread_id);
-    //printList(ready);
     signal(SIGALRM, sig_func);
     ualarm(10000, 0); // alarm in 1 microsecond
-    //alarm(3);
 }
 
 
@@ -49,22 +44,17 @@ void init_alarm() {
  *  Shut down the thread library by freeing all the dynamically allocated memory.
  */
 void t_shutdown() {
-    //printf("t_shutdown\n");
-//    while (NULL != readyNode->next) {
-//        threadNode *temp_block = readyNode;
-//        readyNode = readyNode->next;
-//        free(temp_block->thread_context);
-//        free(temp_block);
-//    }
-//    free(readyNode->thread_context);
-//    free(readyNode);
+    printf("t_shutdown\n");
 
-
-    for (int i = 0; i < ready->len; ++i) {
-        threadNode *tmp = pop(ready);
-        free(tmp->thread_context);
-        free(tmp);
+    threadNode *current = ready->first;
+    while (NULL != current->next) {
+        threadNode *temp_block = current;
+        current = current->next;
+        free(temp_block->thread_context);
+        free(temp_block);
     }
+    free(current->thread_context);
+    free(ready);
 
     free(running);
 }
@@ -128,8 +118,6 @@ void t_terminate() {
  * The first thread (if there is one) in the ready queue resumes execution.
  */
 void t_yield() {
-    //printList(ready);
-
     threadNode *next = pop(ready);
     threadNode *current = running;
     next->next = NULL;
@@ -138,16 +126,12 @@ void t_yield() {
     push(ready, current);
     running = next;
 
-    //printList(ready);
     init_alarm();
     swapcontext(current->thread_context, next->thread_context);
 }
 
 void sig_func(int sig_no) {
-    //printf("Caught signal (%d)[%s] from thread %d\n", sig_no, strsignal(sig_no), running->thread_id);
-    //printList(ready);
     t_yield();
-    //printList(ready);
 }
 
 /**

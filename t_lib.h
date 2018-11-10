@@ -20,8 +20,6 @@ typedef struct threadNode threadNode;
 
 struct threadQueue {
     threadNode *first;
-    int len;
-    int size;
 };
 typedef struct threadQueue threadQueue;
 
