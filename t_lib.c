@@ -1,7 +1,6 @@
-#include <memory.h>
 #include "t_lib.h"
 #include <signal.h>
-#include <zconf.h>
+#include <unistd.h>
 #include "ud_thread.h"
 
 threadNode *running;
@@ -190,4 +189,45 @@ void printList(threadQueue *queueHead) {
         printf("{ }");
     }
     printf("\n");
+}
+
+int sem_init(sem_t **sp, int sem_count) {
+  /* TO DO: Create new semaphore pointed to by sp with count val sem_count
+            Return int upon success/failure? Maybe*/
+  sem_t *tmp = (sem_t *) malloc(sizeof(sem_t));
+  tmp->count = sem_count;
+  tmp->q = NULL;
+  sp = tmp;
+  return 1; //upon successful completion? eh
+}
+
+void sem_wait(sem_t *sp) {
+  /*TO DO: Current thread does wait (P) on semaphore */
+  sighold();
+  sigrelse();
+}
+
+void sem_signal(sem_t *sp) {
+  /*TO DO: Current thread does signal (V) on specified semaphore. Follow Mesa semantics*/
+  sighold();
+  
+  sigrelse();
+}
+
+void sem_destroy(sem_t **sp) {
+  sighold();
+
+  sem_t *tmp = *sp;
+  threadNode *next;
+
+  while(tmp->q != NULL) {
+    next = tmp->q->next;
+    free(tmp->q->thread_context.uc_stack.ss_sp);
+    free(tmp->q->thread_context);
+    free(tmp);
+    tmp = next->q;
+  }
+  free(tmp);
+  
+  sigrelse();
 }
