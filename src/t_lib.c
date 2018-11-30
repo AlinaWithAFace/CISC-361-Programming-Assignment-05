@@ -233,13 +233,19 @@ void printList(threadQueue *queueHead) {
 //}
 
 
+
+
 /**
  * Create a mailbox pointed to by mb.
  * @param mb
  * @return
  */
 int mbox_create(mbox **mb) {
-    malloc(sizeof(mb));
+    mbox *mailbox = malloc(sizeof(mb));
+    //mailbox->msg = malloc(sizeof(messageNode));
+    //mailbox->mbox_sem = malloc(sizeof(sem_t));
+
+    *mb = mailbox;
     return 0;
 }
 
@@ -248,8 +254,9 @@ int mbox_create(mbox **mb) {
  * @param mb
  */
 void mbox_destroy(mbox **mb) {
-    //todo
-    return;
+    //free((*mb)->msg);
+    //free((*mb)->mbox_sem);
+    //free(mb);
 }
 
 
@@ -260,16 +267,37 @@ void mbox_destroy(mbox **mb) {
  * @param len
  */
 void mbox_deposit(mbox *mb, char *msg, int len) {
-    //todo
-    return;
+    /// Make the message
+    messageNode *messageNodeHead = malloc(sizeof(messageNode));
+    messageNodeHead->len = len;
+    messageNodeHead->message = msg;
+
+    /// Add to the end of the mailbox
+    messageNode *headNode = mb->msg;
+    if (NULL == headNode) {
+        mb->msg = messageNodeHead;
+    } else {
+        while (NULL != headNode->next) {
+            headNode = headNode->next;
+        }
+        headNode->next = messageNodeHead;
+    }
+
+    int myint = -1;
+    int *templen = &myint;
+    char *temp = malloc(sizeof(len));
+
+    mbox_withdraw(mb, temp, templen);
+    printf("Recived %d, %s", *templen, temp);
 }
 
 
 /**
- * Withdraw the first message from the mailbox pointed to by `mb` into `msg` and
- * set the message's length in `len` accordingly.
+ * Withdraw the first message from the mailbox pointed to by `mb` into `msg` and set the message's length in `len` accordingly.
  * The caller of `mbox_withdraw()` is responsible for allocating the space in which the received message is stored.
+ *
  * If there is no message in the mailbox, `len` is set to 0.
+ *
  * `mbox_withdraw()` is not blocking.
  * Even if more than one message awaits the caller, only one message is returned per call to `mbox_withdraw()`.
  * Messages are withdrew in the order in which they were deposited.
@@ -278,22 +306,31 @@ void mbox_deposit(mbox *mb, char *msg, int len) {
  * @param len
  */
 void mbox_withdraw(mbox *mb, char *msg, int *len) {
-    //todo
-    return;
+    messageNode *messageNodeHead = mb->msg;
+
+    if (NULL == messageNodeHead) {
+        *len = 0;
+        msg = "";
+    } else {
+        printf("Head not null\n");
+        *len = messageNodeHead->len;
+        msg = messageNodeHead->message;
+        mb->msg = mb->msg->next;
+    }
+
+    printf("[Retrieved Message: %s]\n", msg);
 }
 
 
 /**
  * Send a message to the thread whose tid is `tid`.
- * `msg` is the pointer to the start of the message, and `len` specifies the length of the message in bytes.
  * In your implementation, all messages are character strings.
  * @param tid
- * @param msg
- * @param len
+ * @param msg the pointer to the start of the message
+ * @param len specifies the length of the message in bytes.
  */
 void send(int tid, char *msg, int len) {
-    //todo
-    return;
+
 }
 
 
@@ -305,7 +342,9 @@ void send(int tid, char *msg, int len) {
  *
  * Upon returning, the message is stored starting at `msg`.
  * The `tid` of the thread that sent the message is stored in tid, and the length of the message is stored in `len`.
+ *
  * The caller of `receive()` is responsible for allocating the space in which the message is stored.
+ *
  * Even if more than one message awaits the caller, only one message is returned per call to `receive()`.
  * Messages are received in the order in which they were sent.
  * The caller will not resume execution until it has received a message (blocking receive).

@@ -37,10 +37,12 @@ struct messageNode {
     int receiver;     // TID of receiver thread
     struct messageNode *next; // pointer to next node
 };
+typedef struct messageNode messageNode;
 
-typedef struct {
+struct mbox {
     struct messageNode *msg;       // message queue
     sem_t *mbox_sem;
-} mbox;
+};
+typedef struct mbox mbox;
 
 #endif
