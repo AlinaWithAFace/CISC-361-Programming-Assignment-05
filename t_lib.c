@@ -239,7 +239,7 @@ void printList(threadQueue *queueHead) {
  * @return
  */
 int mbox_create(mbox **mb) {
-    //todo
+    malloc(sizeof(mb));
     return 0;
 }
 
@@ -284,7 +284,9 @@ void mbox_withdraw(mbox *mb, char *msg, int *len) {
 
 
 /**
- * Send a message to the thread whose tid is `tid`. `msg` is the pointer to the start of the message, and `len` specifies the length of the message in bytes. In your implementation, all messages are character strings.
+ * Send a message to the thread whose tid is `tid`.
+ * `msg` is the pointer to the start of the message, and `len` specifies the length of the message in bytes.
+ * In your implementation, all messages are character strings.
  * @param tid
  * @param msg
  * @param len
