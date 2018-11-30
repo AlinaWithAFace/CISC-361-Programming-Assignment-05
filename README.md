@@ -59,36 +59,88 @@ You will design and implement, in 4 phases, a user-level thread library.
 
 #### Phase 4
 
-*   Inter-thread communications:
+##### Inter-thread communications:
 
-*   mailbox:
+###### mailbox:
 
-*   int mbox\_create(mbox \*\*mb); /\* Create a mailbox pointed to by mb. \*/
-*   void mbox\_destroy(mbox \*\*mb); /\* Destroy any state related to the mailbox pointed to by mb. \*/
-*   void mbox\_deposit(mbox \*mb, char \*msg, int len); /\* Deposit message msg of length len into the mailbox pointed to by mb. \*/
-*   void mbox\_withdraw(mbox \*mb, char \*msg, int \*len); /\* Withdraw the first message from the mailbox pointed to by mb into msg and set the message's length in len accordingly. The caller of mbox\_withdraw() is responsible for allocating the space in which the received message is stored. If there is no message in the mailbox, len is set to 0. mbox\_withdraw() is not blocking. Even if more than one message awaits the caller, only one message is returned per call to mbox\_withdraw(). Messages are withdrew in the order in which they were deposited. \*/
-*   An initial mailbox may look like the following.
+```c
+/**
+ * Create a mailbox pointed to by mb.
+ */
+int mbox_create(mbox **mb);
+
+
+/**
+ * Destroy any state related to the mailbox pointed to by mb.
+ */
+void mbox_destroy(mbox **mb);
+
+
+/**
+ * Deposit message msg of length len into the mailbox pointed to by mb.
+ */
+void mbox_deposit(mbox *mb, char *msg, int len);
+
+
+/**
+ * Withdraw the first message from the mailbox pointed to by `mb` into `msg` and
+ * set the message's length in `len` accordingly.
+ * The caller of `mbox_withdraw()` is responsible for allocating the space in which the received message is stored.
+ * If there is no message in the mailbox, `len` is set to 0.
+ * `mbox_withdraw()` is not blocking.
+ * Even if more than one message awaits the caller, only one message is returned per call to `mbox_withdraw()`.
+ * Messages are withdrew in the order in which they were deposited.
+ */
+void mbox_withdraw(mbox *mb, char *msg, int *len);
+```
+
+An initial mailbox may look like the following:
     
-     struct messageNode {
-             char \*message;     // copy of the message 
-             int  len;          // length of the message 
-             int  sender;       // TID of sender thread 
-             int  receiver;     // TID of receiver thread 
-             struct messageNode \*next; // pointer to next node 
-           };
-    	 
-           typedef struct {
-    	  struct messageNode  \*msg;       // message queue
-    	  sem\_t               \*mbox\_sem;
-           } mbox; 
-    
-*   Test cases: T6
+```c
+struct messageNode {
+    char *message;     // copy of the message
+    int len;          // length of the message
+    int sender;       // TID of sender thread
+    int receiver;     // TID of receiver thread
+    struct messageNode *next; // pointer to next node
+};
 
-*   message passing:
+typedef struct {
+    struct messageNode *msg;       // message queue
+    sem_t *mbox_sem;
+} mbox;
+```
+ 
+Test cases: T6
 
-*   void send(int tid, char \*msg, int len); /\* Send a message to the thread whose tid is tid. msg is the pointer to the start of the message, and len specifies the length of the message in bytes. In your implementation, all messages are character strings. \*/
-*   void receive(int \*tid, char \*msg, int \*len); /\* Wait for and receive a message from another thread. The caller has to specify the sender's tid in tid, or sets tid to 0 if it intends to receive a message sent by any thread. If there is no "matching" message to receive, the calling thread waits (i.e., blocks itself). \[A sending thread is responsible for waking up a waiting, receiving thread.\] Upon returning, the message is stored starting at msg. The tid of the thread that sent the message is stored in tid, and the length of the message is stored in len. The caller of receive() is responsible for allocating the space in which the message is stored. Even if more than one message awaits the caller, only one message is returned per call to receive(). Messages are received in the order in which they were sent. The caller will not resume execution until it has received a message (blocking receive). \*/
-*   Test cases: T5 and T8
+###### message passing:
+
+```c
+/**
+ * Send a message to the thread whose tid is `tid`.
+ * `msg` is the pointer to the start of the message, and `len` specifies the length of the message in bytes.
+ * In your implementation, all messages are character strings.
+ */
+void send(int tid, char *msg, int len);
+
+
+/**
+ * Wait for and receive a message from another thread.
+ * The caller has to specify the sender's tid in `tid`, or sets `tid` to 0 if it intends to receive a message sent by any thread.
+ * If there is no "matching" message to receive, the calling thread waits (i.e., blocks itself).
+ * [A sending thread is responsible for waking up a waiting, receiving thread.]
+ *
+ * Upon returning, the message is stored starting at `msg`.
+ * The `tid` of the thread that sent the message is stored in tid, and the length of the message is stored in `len`.
+ * The caller of `receive()` is responsible for allocating the space in which the message is stored.
+ * Even if more than one message awaits the caller, only one message is returned per call to `receive()`.
+ * Messages are received in the order in which they were sent.
+ * The caller will not resume execution until it has received a message (blocking receive).
+ */
+void receive(int *tid, char *msg, int *len);
+```
+
+Test cases: T5 and T8
 
 ### How to get started
 
@@ -112,7 +164,7 @@ Blocking send/receive: \[[9 with active V](9.active)\], \[[9 with passive V](9.p
 Phase 1:
 
 *   [Shone-Hoffman](mytest.c) ([output](mytest_output.txt))
-*   [Sullivan](Tfib.c) ([makefile](Makefile))
+*   [Sullivan](Tfib.c) ([makefile](src/Makefile))
 
 Phase 2:
 

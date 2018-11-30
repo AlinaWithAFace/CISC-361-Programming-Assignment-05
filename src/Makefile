@@ -25,10 +25,10 @@ t_lib.a: ${LIBOBJS} Makefile
 # here, we specify how each file should be compiled, what
 # files they depend on, etc.
 
-t_lib.o: t_lib.c t_lib.h Makefile
+t_lib.o: t_lib.c src/t_lib.h Makefile
 	${CC} ${CFLAGS} -c t_lib.c
 
-test00.o: tests/test00.c ud_thread.h Makefile
+test00.o: ../tests/test00.c src/ud_thread.h Makefile
 	${CC} ${CFLAGS} -c test00.c
 
 test00: test00.o t_lib.a Makefile

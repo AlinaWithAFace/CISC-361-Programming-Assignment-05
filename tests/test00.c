@@ -1,4 +1,4 @@
-#include "ud_thread.h"
+#include "src/ud_thread.h"
 #include <stdio.h>
 
 void assign(int pri) {

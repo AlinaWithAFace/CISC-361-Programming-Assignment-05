@@ -5,59 +5,77 @@ set(CMAKE_C_STANDARD 11)
 
 include_directories(.)
 
-add_executable(test00
+add_executable(hello-threads
         tests/test00.c
-        ud_thread.h
-        t_lib.h
-        t_lib.c)
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
 
-add_executable(test01-thread-creation
+add_executable(thread-creation
         tests/test01-thread-creation.c
-        ud_thread.h
-        t_lib.h
-        t_lib.c)
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
 
-add_executable(test01x-multi-thread-creation
+add_executable(multi-thread-creation-a
         tests/test01x-multi-thread-creation.c
-        ud_thread.h
-        t_lib.h
-        t_lib.c)
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
 
-add_executable(swap-context-yield
-        ../../../.CLion2018.2/config/scratches/swap-context-yield.c)
+#add_executable(swap-context-yield
+#        ../../../.CLion2018.2/config/scratches/swap-context-yield.c)
 
-add_executable(swap-context
-        ../../../.CLion2018.2/config/scratches/swap-context.c)
+#add_executable(swap-context
+#        ../../../.CLion2018.2/config/scratches/swap-context.c)
 
-add_executable(test00_original
-        tests/test00.c
-        ud_thread.h
-        ../../../.CLion2018.2/config/scratches/t_lib_original.h
-        ../../../.CLion2018.2/config/scratches/t_lib_original.c)
+#add_executable(test00_original
+#        tests/test00.c
+#        src/ud_thread.h
+#        ../../../.CLion2018.2/config/scratches/t_lib_original.h
+#        ../../../.CLion2018.2/config/scratches/t_lib_original.c)
 
-add_executable(test01a-multi-thread-creation
+add_executable(multi-thread-creation-b
         tests/test01a-multi-thread-creation.c
-        ud_thread.h
-        t_lib.h
-        t_lib.c)
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
 
-add_executable(test02-time-slicing
+add_executable(time-slicing-a
         tests/test02-time-slicing.c
-        ud_thread.h
-        t_lib.h
-        t_lib.c)
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
 
-add_executable(test04-time-slicing
+add_executable(time-slicing-b
         tests/test04-time-slicing.c
-        ud_thread.h
-        t_lib.h
-        t_lib.c)
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
 
-add_executable(test07-testing-2lq
+add_executable(two-level-queue
         tests/test07-testing-2lq.c
-        ud_thread.h
-        t_lib.h
-        t_lib.c)
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
 
-add_executable(test_alarm
+add_executable(alarm
         samples/test_alarm.c)
+
+add_executable(send-recieve
+        tests/test05-send-recieve.c
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
+
+add_executable(send-recieve-asynchronous
+        tests/test08-asynchronous-send-recieve.c
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
+
+add_executable(mailbox
+        tests/test06-mailbox.c
+        src/ud_thread.h
+        src/t_lib.h
+        src/t_lib.c)
