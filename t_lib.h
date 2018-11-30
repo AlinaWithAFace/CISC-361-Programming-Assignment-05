@@ -24,8 +24,8 @@ struct threadQueue {
 typedef struct threadQueue threadQueue;
 
 struct sem_t {
-  int count;
-  threadNode *q;
+    int count;
+    threadNode *q;
 };
 typedef struct semaphore sem_t;
 

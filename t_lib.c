@@ -1,7 +1,7 @@
-#include "t_lib.h"
 #include <signal.h>
 #include <unistd.h>
 #include "ud_thread.h"
+#include "t_lib.h"
 
 threadNode *running;
 threadQueue *ready;
