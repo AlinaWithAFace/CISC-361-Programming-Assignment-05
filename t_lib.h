@@ -27,7 +27,19 @@ struct sem_t {
     int count;
     threadNode *q;
 };
-typedef struct semaphore sem_t;
+typedef struct sem_t sem_t;
 
-#endif
+struct messageNode {
+    char *message;     // copy of the message
+    int len;          // length of the message
+    int sender;       // TID of sender thread
+    int receiver;     // TID of receiver thread
+    struct messageNode *next; // pointer to next node
+};
 
+typedef struct {
+    struct messageNode *msg;       // message queue
+    sem_t *mbox_sem;
+} mbox;
+
+#endif _TLIBH_
