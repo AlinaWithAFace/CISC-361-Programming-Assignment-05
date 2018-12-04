@@ -4,13 +4,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
-#include "src/ud_thread.h"
+#include <src/ud_thread.h>
+//#include "ud_thread.h"
 
 mbox *mb;
 char *msg[2] = {"hello world...", "bye, bye"};
 
-void producer(int id) {
+void producer(int id)
+{
     int i;
     char mymsg[30];
 
@@ -23,7 +24,8 @@ void producer(int id) {
     t_terminate();
 }
 
-void consumer(int id) {
+void consumer(int id)
+{
     int i;
     int len;
     char mesg[1024];
@@ -52,6 +54,7 @@ int main(void) {
 
     return 0;
 }
+
 
 
 /*

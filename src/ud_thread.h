@@ -41,4 +41,6 @@ void send(int tid, char *msg, int len);
 
 void receive(int *tid, char *msg, int *len);
 
+mbox *fetchMailbox(int tid);
+
 #endif

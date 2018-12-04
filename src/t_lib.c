@@ -1,5 +1,6 @@
 #include <signal.h>
 #include <unistd.h>
+#include <memory.h>
 #include "ud_thread.h"
 #include "t_lib.h"
 
@@ -91,6 +92,7 @@ void t_create(void (*fct)(int), int id, int pri) {
     new_thread_block->thread_priority = pri;
     new_thread_block->thread_context = new_thread_block->thread_context;
     new_thread_block->next = NULL;
+    mbox_create(&new_thread_block->mailbox);
 
     push(ready, new_thread_block);
 }
@@ -254,7 +256,7 @@ int mbox_create(mbox **mb) {
  * @param mb
  */
 void mbox_destroy(mbox **mb) {
-    //free((*mb)->msg);
+    free((*mb)->msg);
     //free((*mb)->mbox_sem);
     //free(mb);
 }
@@ -267,6 +269,7 @@ void mbox_destroy(mbox **mb) {
  * @param len
  */
 void mbox_deposit(mbox *mb, char *msg, int len) {
+    //printf("DEPOSITING\n");
     /// Make the message
     messageNode *messageNodeHead = malloc(sizeof(messageNode));
     messageNodeHead->len = len;
@@ -275,20 +278,18 @@ void mbox_deposit(mbox *mb, char *msg, int len) {
     /// Add to the end of the mailbox
     messageNode *headNode = mb->msg;
     if (NULL == headNode) {
+        //printf("Head null\n");
         mb->msg = messageNodeHead;
+        headNode = messageNodeHead;
     } else {
+        //printf("Looping");
         while (NULL != headNode->next) {
             headNode = headNode->next;
         }
         headNode->next = messageNodeHead;
     }
-
-    int myint = -1;
-    int *templen = &myint;
-    char *temp = malloc(sizeof(len));
-
-    mbox_withdraw(mb, temp, templen);
-    printf("Recived %d, %s", *templen, temp);
+    //printf("Deposited");
+    //t_yield();
 }
 
 
@@ -306,19 +307,21 @@ void mbox_deposit(mbox *mb, char *msg, int len) {
  * @param len
  */
 void mbox_withdraw(mbox *mb, char *msg, int *len) {
+    // printf("WITHDRAWING\n");
     messageNode *messageNodeHead = mb->msg;
 
-    if (NULL == messageNodeHead) {
-        *len = 0;
-        msg = "";
-    } else {
-        printf("Head not null\n");
+    char *message = "";
+    *len = 0;
+
+    if (NULL != messageNodeHead) {
+        // printf("Head not null\n");
         *len = messageNodeHead->len;
-        msg = messageNodeHead->message;
+        message = messageNodeHead->message;
         mb->msg = mb->msg->next;
     }
 
-    printf("[Retrieved Message: %s]\n", msg);
+    strcpy(msg, message);
+    // t_yield();
 }
 
 
@@ -330,7 +333,33 @@ void mbox_withdraw(mbox *mb, char *msg, int *len) {
  * @param len specifies the length of the message in bytes.
  */
 void send(int tid, char *msg, int len) {
+    mbox *destination = fetchMailbox(tid);
+    mbox_deposit(destination, msg, len);
+}
 
+/**
+ * return the mailbox of the first thread with a given ID
+ * @param tid
+ * @return
+ */
+mbox *fetchMailbox(int tid) {
+    if (running->thread_id == tid) {
+        return running->mailbox;
+    } else {
+        threadNode *currentNode;
+        if (NULL != ready) {
+            currentNode = ready->first;
+
+            while (NULL != currentNode) {
+                if (currentNode->thread_id == tid) {
+                    return currentNode->mailbox;
+                }
+                currentNode = currentNode->next;
+            }
+
+        }
+    }
+    return NULL;
 }
 
 
@@ -353,6 +382,6 @@ void send(int tid, char *msg, int len) {
  * @param len
  */
 void receive(int *tid, char *msg, int *len) {
-    //todo
-    return;
+    mbox *recipient = running->mailbox;
+    mbox_withdraw(recipient, msg, len);
 }

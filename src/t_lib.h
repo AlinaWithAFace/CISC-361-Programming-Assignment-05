@@ -16,6 +16,7 @@ struct threadNode {
     int thread_priority;
     ucontext_t *thread_context;
     struct threadNode *next;
+    struct mbox *mailbox;
 };
 typedef struct threadNode threadNode;
 
