@@ -103,6 +103,7 @@ void t_create(void (*fct)(int), int id, int pri) {
  */
 void t_terminate() {
     threadNode *tmp = running;
+    mbox_destroy(&tmp->mailbox);
     free(tmp->thread_context->uc_stack.ss_sp);
     free(tmp->thread_context);
     free(tmp);
@@ -257,8 +258,8 @@ int mbox_create(mbox **mb) {
  */
 void mbox_destroy(mbox **mb) {
     free((*mb)->msg);
-    //free((*mb)->mbox_sem);
-    //free(mb);
+    free((*mb)->mbox_sem);
+    free(mb);
 }
 
 
@@ -324,6 +325,27 @@ void mbox_withdraw(mbox *mb, char *msg, int *len) {
     // t_yield();
 }
 
+void mbox_picky_withdraw(mbox *mb, int *tid, char *msg, int *len) {
+    // printf("WITHDRAWING\n");
+    messageNode *messageNodeHead = mb->msg;
+
+    char *message = "";
+    *len = 0;
+
+    if (NULL != messageNodeHead) {
+        while (NULL != messageNodeHead->next) {
+            if (messageNodeHead->sender == *tid) {
+                *len = messageNodeHead->len;
+                message = messageNodeHead->message;
+            }
+            mb->msg = mb->msg->next;
+        }
+    }
+
+    strcpy(msg, message);
+    // t_yield();
+}
+
 
 /**
  * Send a message to the thread whose tid is `tid`.
@@ -383,5 +405,9 @@ mbox *fetchMailbox(int tid) {
  */
 void receive(int *tid, char *msg, int *len) {
     mbox *recipient = running->mailbox;
-    mbox_withdraw(recipient, msg, len);
+    if (tid == 0) {
+        mbox_withdraw(recipient, msg, len);
+    } else {
+        mbox_picky_withdraw(recipient, tid, msg, len);
+    }
 }
